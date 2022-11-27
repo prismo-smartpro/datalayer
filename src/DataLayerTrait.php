@@ -5,6 +5,10 @@ namespace SmartPRO\Technology;
 use PDO;
 use PDOException;
 
+/**
+ * @DataLayerTrait
+ * @package SmartPRO\Technology
+ */
 trait DataLayerTrait
 {
 
