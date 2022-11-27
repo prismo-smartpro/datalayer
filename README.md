@@ -10,10 +10,10 @@ composer require prismo-smartpro/datalayer
 ```php
 <?php
 const MYSQL = [
-    "host" => "localhost",
-    "username" => "root",
+    "host" => "",
+    "username" => "",
     "password" => "",
-    "db" => "kapelao"
+    "db" => ""
 ];
 ```
 
