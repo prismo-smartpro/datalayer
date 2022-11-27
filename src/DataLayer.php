@@ -211,7 +211,6 @@ class DataLayer extends Connect
             return $query->fetchObject(static::class);
         } catch (PDOException $exception) {
             $this->exception = $exception->getMessage();
-            var_dump($this->exception, $this->statement);
             return null;
         }
     }
@@ -239,7 +238,7 @@ class DataLayer extends Connect
         if (empty($listDuplicate)) {
             return true;
         } elseif (count($listDuplicate) == 1) {
-            $this->error = "O campo {$listDuplicate[0]} já esta cadastrado!";
+            $this->error = "Este(a) {$listDuplicate[0]} já existe!";
             return false;
         } else {
             $this->error = "Os campos (" . implode(", ", $listDuplicate) . ") já existem com os valores informados!";
