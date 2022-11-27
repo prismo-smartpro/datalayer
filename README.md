@@ -1,7 +1,8 @@
 #### INSTALAÇÃO
 
+run
 ```bash
-
+composer require prismo-smartpro/datalayer
 ```
 
 #### MYSQL CONNECT
