@@ -40,6 +40,8 @@ class DataLayer extends Connect
     protected ?string $gruop = null;
     /** @var string|null */
     protected ?string $offset = null;
+    /** @var array|null */
+    protected ?array $terms = [];
 
     /**
      * @param $entity
@@ -99,12 +101,23 @@ class DataLayer extends Connect
     public function find($parameters = null, string $coluns = "*"): ?DataLayer
     {
         $this->statement = "SELECT {$coluns} FROM `{$this->entity}`";
-        if ($parameters) {
+        if ($parameters === null) {
             parse_str($parameters, $parse);
             $parse = $this->filter($parse, " AND");
             if (!empty($parse)) {
                 $this->statement = $this->statement . " WHERE {$parse}";
             }
+        }
+
+        $list = [];
+        if ($parameters) {
+            parse_str($parameters, $terms);
+            foreach ($terms as $item => $value) {
+                $list["keys"][] = "`{$item}` = :{$item}";
+                $list["values"][":{$item}"] = $value;
+            }
+            $this->statement = $this->statement . " WHERE " . implode(" AND ", $list['keys']);
+            $this->terms = $list['values'];
         }
         return $this;
     }
@@ -142,12 +155,18 @@ class DataLayer extends Connect
 
         $likeList = [];
         foreach ($parans as $item => $value) {
-            $likeList[] = "`{$item}` LIKE '%" . filter_var($value, FILTER_SANITIZE_SPECIAL_CHARS) . "%'";
+            $likeList["keys"][] = "`{$item}` LIKE :{$item}";
+            $likeList["values"][":{$item}"] = $value;
         }
 
-        $likeList = implode(" AND ", $likeList);
-        $this->statement = "SELECT {$coluns} FROM `{$this->entity}` WHERE {$likeList}";
-        return $this->execute()->fetchAll(PDO::FETCH_CLASS, static::class);
+        $terms = implode(" AND ", $likeList["keys"]);
+        $this->statement = "SELECT {$coluns} FROM `{$this->entity}` WHERE {$terms}";
+        $query = self::getInstance()->prepare($this->statement);
+        foreach ($likeList['values'] as $item => $value) {
+            $query->bindValue($item, "%{$value}%");
+        }
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_CLASS, static::class);
     }
 
     /**
@@ -164,7 +183,12 @@ class DataLayer extends Connect
      */
     public function fetchAll()
     {
-        return $this->find()->fetch(true);
+        $query = self::getInstance()->prepare($this->statement);
+        foreach ($this->terms as $item => $value){
+            $query->bindValue($item, $value);
+        }
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_CLASS, static::class);
     }
 
     /**
@@ -185,7 +209,7 @@ class DataLayer extends Connect
      */
     public function rowsCount($parameters = null): int
     {
-        return $this->execute()->rowCount();
+        return self::getInstance()->query($this->statement)->rowCount();
     }
 
     /**
@@ -198,6 +222,9 @@ class DataLayer extends Connect
             $query = self::getInstance()->prepare(
                 $this->statement . $this->gruop . $this->order . $this->limite . $this->offset
             );
+            foreach ($this->terms as $item => $value){
+                $query->bindValue($item, $value);
+            }
             $query->execute();
 
             if (!$query->rowCount()) {

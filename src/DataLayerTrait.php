@@ -4,6 +4,7 @@ namespace SmartPRO\Technology;
 
 use PDO;
 use PDOException;
+use PDOStatement;
 
 /**
  * @DataLayerTrait
@@ -25,10 +26,20 @@ trait DataLayerTrait
         unset($data[$this->primary]);
         $filter = $this->filter($data);
 
+        $list = [];
+        foreach ($data as $item => $value) {
+            $list["keys"][] = "`{$item}` = :{$item}";
+            $list["values"][":{$item}"] = $value;
+        }
+
         try {
-            $statement = "UPDATE `{$this->entity}` SET {$filter} WHERE `{$this->primary}` = ?";
-            $query = Connect::getInstance()->prepare($statement);
-            $query->execute([$primary]);
+            $statement = "UPDATE `{$this->entity}` SET " . implode(", ", $list['keys']) . " WHERE `{$this->primary}` = :id";
+            $query = self::getInstance()->prepare($statement);
+            foreach ($list['values'] as $item => $value) {
+                $query->bindValue($item, $value);
+            }
+            $query->bindValue(":id", $primary);
+            $query->execute();
             return $query->rowCount();
         } catch (PDOException $exception) {
             $this->exception = $exception->getMessage();
@@ -40,7 +51,7 @@ trait DataLayerTrait
      * @param array $data
      * @return bool
      */
-    private function register(array $data): bool
+    private function register(array $data): ?bool
     {
         if (empty($data)) {
             return false;
@@ -53,12 +64,18 @@ trait DataLayerTrait
 
         $values = [];
         foreach ($data as $item => $value) {
-            $values["`{$item}`"] = "'" . filter_var($value, FILTER_SANITIZE_SPECIAL_CHARS) . "'";
+            $values['keys']["`{$item}`"] = ":{$item}";
+            $values['values'][":{$item}"] = $value;
         }
 
         try {
-            $statement = "INSERT INTO `{$this->entity}` (" . implode(",", array_keys($values)) . ") VALUES (" . implode(",", array_values($values)) . ")";
-            return $this->execute($statement)->rowCount();
+            $statement = "INSERT INTO `{$this->entity}` (" . implode(",", array_keys($values['keys'])) . ") VALUES (" . implode(",", array_values($values['keys'])) . ")";
+            $query = self::getInstance()->prepare($statement);
+            foreach ($values['values'] as $item => $value) {
+                $query->bindValue($item, $value);
+            }
+            $query->execute();
+            return $query->rowCount();
         } catch (PDOException $exception) {
             $this->exception = $exception->getMessage();
             return false;
@@ -73,15 +90,15 @@ trait DataLayerTrait
         $primary = $this->primary;
         $id = $this->data->$primary;
         $statement = "DELETE FROM `{$this->entity}` WHERE `{$primary}` = ?";
-        return $this->execute($statement, [$id])->rowCount();
+        return $this->exec($statement, [$id])->rowCount();
     }
 
     /**
-     * @param $statement
-     * @param $parameters
-     * @return false|\PDOStatement|void
+     * @param null $statement
+     * @param array|null $parameters
+     * @return false|PDOStatement|void
      */
-    private function execute($statement = null, $parameters = [])
+    private function exec($statement = null, ?array $parameters = [])
     {
         if (empty($statement)) {
             $statement = $this->statement;
@@ -104,7 +121,7 @@ trait DataLayerTrait
     {
         $list = [];
         foreach ($data as $item => $value) {
-            $list[] = "`{$item}` = '" . filter_var($value, FILTER_SANITIZE_SPECIAL_CHARS) . "'";
+            $list[] = "`{$item}` = '" . filter_var($value, FILTER_DEFAULT) . "'";
         }
         return implode("{$separator} ", $list);
     }
