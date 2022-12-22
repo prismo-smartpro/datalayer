@@ -25,7 +25,7 @@ class DataLayer extends Connect
     /** @var bool|mixed */
     protected bool $timestamp;
     /** @var string|null */
-    protected ?string $statement;
+    protected ?string $statement = null;
     /** @var object|null */
     protected ?object $data;
     /** @var string|null */
@@ -181,14 +181,9 @@ class DataLayer extends Connect
     /**
      * @return array|false|mixed|object|DataLayer|stdClass|null
      */
-    public function fetchAll()
+    public function fetchAll($terms = null, $coluns = "*")
     {
-        $query = self::getInstance()->prepare($this->statement);
-        foreach ($this->terms as $item => $value){
-            $query->bindValue($item, $value);
-        }
-        $query->execute();
-        return $query->fetchAll(PDO::FETCH_CLASS, static::class);
+        return $this->find($terms, $coluns)->fetch(true);
     }
 
     /**
@@ -222,7 +217,7 @@ class DataLayer extends Connect
             $query = self::getInstance()->prepare(
                 $this->statement . $this->gruop . $this->order . $this->limite . $this->offset
             );
-            foreach ($this->terms as $item => $value){
+            foreach ($this->terms as $item => $value) {
                 $query->bindValue($item, $value);
             }
             $query->execute();
