@@ -335,6 +335,14 @@ class DataLayer extends Connect
     }
 
     /**
+     * @return object|null
+     */
+    public function getData(): ?object
+    {
+        return $this->data;
+    }
+
+    /**
      * @return string|null
      */
     public function error(): ?string
