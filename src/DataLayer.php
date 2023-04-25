@@ -98,26 +98,17 @@ class DataLayer extends Connect
      * @param string $coluns
      * @return $this|null
      */
-    public function find($parameters = null, string $coluns = "*"): ?DataLayer
+    public function find($parameters = null, string $terms = null, string $coluns = "*"): ?DataLayer
     {
         $this->statement = "SELECT {$coluns} FROM `{$this->entity}`";
-        if ($parameters === null) {
-            parse_str($parameters, $parse);
-            $parse = $this->filter($parse, " AND");
-            if (!empty($parse)) {
-                $this->statement = $this->statement . " WHERE {$parse}";
-            }
+        parse_str($terms, $terms_array);
+
+        if (!empty($parameters)) {
+            $this->statement = $this->statement . " WHERE {$parameters}";
         }
 
-        $list = [];
-        if ($parameters) {
-            parse_str($parameters, $terms);
-            foreach ($terms as $item => $value) {
-                $list["keys"][] = "`{$item}` = :{$item}";
-                $list["values"][":{$item}"] = $value;
-            }
-            $this->statement = $this->statement . " WHERE " . implode(" AND ", $list['keys']);
-            $this->terms = $list['values'];
+        if (!empty($terms_array)) {
+            $this->terms = $terms_array;
         }
         return $this;
     }
@@ -137,7 +128,6 @@ class DataLayer extends Connect
         if (empty($this->data->$primary)) {
             return $this->register((array)$this->data);
         }
-
         return $this->update((array)$this->data);
     }
 
@@ -146,27 +136,24 @@ class DataLayer extends Connect
      * @param string $coluns
      * @return array|false
      */
-    public function search($parameters = null, string $coluns = "*")
+    public function search(string $parameters = null, string $terms = null, string $coluns = "*")
     {
-        parse_str($parameters, $parans);
-        if (empty($parans)) {
+        try {
+            $this->statement = "SELECT {$coluns} FROM `{$this->entity}` WHERE {$parameters}";
+            $query = self::getInstance()->prepare($this->statement . $this->gruop . $this->order . $this->limite . $this->offset);
+            parse_str($terms, $terms_array);
+            foreach ($terms_array as $item => $value) {
+                $query->bindValue($item, "%{$value}%");
+            }
+            $query->execute();
+            if (empty($query->rowCount())) {
+                return [];
+            }
+            return $query->fetchAll(PDO::FETCH_CLASS, static::class);
+        } catch (PDOException $exception) {
+            $this->error = $exception->getMessage();
             return [];
         }
-
-        $likeList = [];
-        foreach ($parans as $item => $value) {
-            $likeList["keys"][] = "`{$item}` LIKE :{$item}";
-            $likeList["values"][":{$item}"] = $value;
-        }
-
-        $terms = implode(" AND ", $likeList["keys"]);
-        $this->statement = "SELECT {$coluns} FROM `{$this->entity}` WHERE {$terms}";
-        $query = self::getInstance()->prepare($this->statement);
-        foreach ($likeList['values'] as $item => $value) {
-            $query->bindValue($item, "%{$value}%");
-        }
-        $query->execute();
-        return $query->fetchAll(PDO::FETCH_CLASS, static::class);
     }
 
     /**
@@ -181,9 +168,9 @@ class DataLayer extends Connect
     /**
      * @return array|false|mixed|object|DataLayer|stdClass|null
      */
-    public function fetchAll($terms = null, $coluns = "*")
+    public function fetchAll($parameters = null, $terms = null, $coluns = "*")
     {
-        return $this->find($terms, $coluns)->fetch(true);
+        return $this->find($parameters,$terms, $coluns)->fetch(true);
     }
 
     /**
