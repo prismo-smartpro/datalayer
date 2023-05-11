@@ -95,13 +95,15 @@ class DataLayer extends Connect
 
     /**
      * @param $parameters
-     * @param string $coluns
+     * @param string $columns
      * @return $this|null
      */
-    public function find($parameters = null, string $terms = null, string $coluns = "*"): ?DataLayer
+    public function find($parameters = null, string $terms = null, string $columns = "*"): ?DataLayer
     {
-        $this->statement = "SELECT {$coluns} FROM `{$this->entity}`";
-        parse_str($terms, $terms_array);
+        $this->statement = "SELECT {$columns} FROM `{$this->entity}`";
+        if(!empty($terms)){
+            parse_str($terms, $terms_array);
+        }
 
         if (!empty($parameters)) {
             $this->statement = $this->statement . " WHERE {$parameters}";
