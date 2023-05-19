@@ -53,7 +53,7 @@ $byId = (new Settings())->findById(17);
 
 // Edit the data that returns and saves the data
 if (!empty($byId)) {
-    $byId->empresa = "My Busines";
+    $byId->empresa = "My Business";
     $byId->save();
 }
 
@@ -63,10 +63,10 @@ if (!empty($byId)) {
 }
 
 // Makes a search query using the LIKE parameter
-$serch = (new Settings())->search("empresa=My Busines");
+$search = (new Settings())->search("empresa like :empresa", ":empresa=My Business");
 
 // Query with custom data
-$results = (new Settings())->find("empresa=My Busines", "*")
+$results = (new Settings())->find("empresa = :empresa", ":empresa=My Business", "*")
     ->limite(5)
     ->order("id DESC")
     ->gruopBy("site")
@@ -93,7 +93,7 @@ class Settings extends DataLayer
     }
     
     public function fidByEmail($email){
-        return $this->find("email={$email}")->fetch();
+        return $this->find("email = :email", ":email={$email}")->fetch();
     }
 }
 ```

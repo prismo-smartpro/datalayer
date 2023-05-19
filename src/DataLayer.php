@@ -14,34 +14,63 @@ class DataLayer extends Connect
 {
     use DataLayerTrait;
 
-    /** @var string|null */
+
+    /**
+     * @var string|null
+     */
     protected ?string $entity;
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     protected ?string $primary;
-    /** @var array|mixed|null */
+    /**
+     * @var array|null
+     */
     protected ?array $required;
-    /** @var array|mixed|null */
+    /**
+     * @var array|null
+     */
     protected ?array $unique;
-    /** @var bool|mixed */
+    /**
+     * @var bool
+     */
     protected bool $timestamp;
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     protected ?string $statement = null;
-    /** @var object|null */
+    /**
+     * @var object|null
+     */
     protected ?object $data;
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     protected ?string $error;
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     protected ?string $exception;
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     protected ?string $limite = null;
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
     protected ?string $order = null;
-    /** @var string|null */
-    protected ?string $gruop = null;
-    /** @var string|null */
+    /**
+     * @var string|null
+     */
+    protected ?string $group = null;
+    /**
+     * @var string|null
+     */
     protected ?string $offset = null;
-    /** @var array|null */
-    protected ?array $terms = [];
+    /**
+     * @var array|null
+     */
+    protected ?array $parameters = [];
 
     /**
      * @param $entity
@@ -94,24 +123,24 @@ class DataLayer extends Connect
     }
 
     /**
-     * @param null $parameters
      * @param string|null $terms
+     * @param string|null $parameters
      * @param string $columns
      * @return $this|null
      */
-    public function find($parameters = null, string $terms = null, string $columns = "*"): ?DataLayer
+    public function find(string $terms = null, string $parameters = null, string $columns = "*"): ?DataLayer
     {
         $this->statement = "SELECT {$columns} FROM `{$this->entity}`";
         if (!empty($terms)) {
-            parse_str($terms, $terms_array);
+            $this->statement = $this->statement . " WHERE {$terms}";
         }
 
         if (!empty($parameters)) {
-            $this->statement = $this->statement . " WHERE {$parameters}";
+            parse_str($parameters, $parameterArray);
         }
 
-        if (!empty($terms_array)) {
-            $this->terms = $terms_array;
+        if (!empty($parameterArray)) {
+            $this->parameters = $parameterArray;
         }
         return $this;
     }
@@ -135,17 +164,22 @@ class DataLayer extends Connect
     }
 
     /**
-     * @param $parameters
-     * @param string $coluns
+     * @param string|null $terms
+     * @param string|null $parameters
+     * @param string $columns
      * @return array|false
      */
-    public function search(string $parameters = null, string $terms = null, string $coluns = "*")
+    public function search(string $terms = null, string $parameters = null, string $columns = "*")
     {
         try {
-            $this->statement = "SELECT {$coluns} FROM `{$this->entity}` WHERE {$parameters}";
-            $query = self::getInstance()->prepare($this->statement . $this->gruop . $this->order . $this->limite . $this->offset);
-            parse_str($terms, $terms_array);
-            foreach ($terms_array as $item => $value) {
+            $this->statement = "SELECT {$columns} FROM `{$this->entity}` WHERE {$terms}";
+            $query = self::getInstance()->prepare($this->statement . $this->group . $this->order . $this->limite . $this->offset);
+            if($parameters){
+                parse_str($parameters, $parametersArray);
+            }else{
+                $parametersArray = array();
+            }
+            foreach ($parametersArray as $item => $value) {
                 $query->bindValue($item, "%{$value}%");
             }
             $query->execute();
@@ -168,12 +202,10 @@ class DataLayer extends Connect
         return $this->find("id={$id}")->fetch();
     }
 
-    public function findLast()
-    {
-        return $this->find()->order("`{$this->primary}` ASC")->limite(1)->fetch();
-    }
-
-    public function findFirst()
+    /**
+     * @return array|false|mixed|object|DataLayer|stdClass|null
+     */
+    public function last()
     {
         return $this->find()->limite(1)->fetch();
     }
@@ -181,9 +213,17 @@ class DataLayer extends Connect
     /**
      * @return array|false|mixed|object|DataLayer|stdClass|null
      */
-    public function fetchAll($parameters = null, $terms = null, $coluns = "*")
+    public function first()
     {
-        return $this->find($parameters, $terms, $coluns)->fetch(true);
+        return $this->find()->limite(1)->order("id ASC")->fetch();
+    }
+
+    /**
+     * @return array|false|mixed|object|DataLayer|stdClass|null
+     */
+    public function fetchAll($terms = null, $parameters = null, $columns = "*")
+    {
+        return $this->find($terms, $parameters, $columns)->fetch(true);
     }
 
     /**
@@ -199,12 +239,35 @@ class DataLayer extends Connect
     }
 
     /**
+     * @param $terms
      * @param $parameters
-     * @return int
+     * @return int|null
      */
-    public function rowsCount($parameters = null): int
+    public function rowsCount($terms = null, $parameters = null): ?int
     {
-        return self::getInstance()->query($this->statement)->rowCount();
+        try {
+            $this->statement = "select `{$this->primary}` from `{$this->entity}`";
+            if($terms){
+                $this->statement.=" where {$terms}";
+            }
+
+            $query = self::getInstance()->prepare($this->statement);
+            if($parameters){
+                parse_str($parameters, $parametersArray);
+                foreach ($parametersArray as $item => $value){
+                    if(strpos($this->statement, "like")){
+                        $query->bindValue($item, "%{$value}%");
+                    }else{
+                        $query->bindValue($item, $value);
+                    }
+                }
+            }
+
+            $query->execute();
+            return $query->rowCount();
+        }catch (PDOException $exception){
+            return null;
+        }
     }
 
     /**
@@ -218,9 +281,9 @@ class DataLayer extends Connect
                 $this->limite(1);
             }
             $query = self::getInstance()->prepare(
-                $this->statement . $this->gruop . $this->order . $this->limite . $this->offset
+                $this->statement . $this->group . $this->order . $this->limite . $this->offset
             );
-            foreach ($this->terms as $item => $value) {
+            foreach ($this->parameters as $item => $value) {
                 $query->bindValue($item, $value);
             }
             $query->execute();
@@ -300,12 +363,12 @@ class DataLayer extends Connect
     }
 
     /**
-     * @param string|null $gruop
+     * @param string|null $group
      * @return DataLayer
      */
-    public function gruopBy(?string $gruop): DataLayer
+    public function group(?string $group): DataLayer
     {
-        $this->gruop = " GROUP BY " . $gruop;
+        $this->group = " GROUP BY " . $group;
         return $this;
     }
 
