@@ -94,14 +94,15 @@ class DataLayer extends Connect
     }
 
     /**
-     * @param $parameters
+     * @param null $parameters
+     * @param string|null $terms
      * @param string $columns
      * @return $this|null
      */
     public function find($parameters = null, string $terms = null, string $columns = "*"): ?DataLayer
     {
         $this->statement = "SELECT {$columns} FROM `{$this->entity}`";
-        if(!empty($terms)){
+        if (!empty($terms)) {
             parse_str($terms, $terms_array);
         }
 
@@ -167,12 +168,22 @@ class DataLayer extends Connect
         return $this->find("id={$id}")->fetch();
     }
 
+    public function findLast()
+    {
+        return $this->find()->order("`{$this->primary}` ASC")->limite(1)->fetch();
+    }
+
+    public function findFirst()
+    {
+        return $this->find()->limite(1)->fetch();
+    }
+
     /**
      * @return array|false|mixed|object|DataLayer|stdClass|null
      */
     public function fetchAll($parameters = null, $terms = null, $coluns = "*")
     {
-        return $this->find($parameters,$terms, $coluns)->fetch(true);
+        return $this->find($parameters, $terms, $coluns)->fetch(true);
     }
 
     /**
@@ -203,6 +214,9 @@ class DataLayer extends Connect
     public function fetch(bool $all = false)
     {
         try {
+            if (!$all) {
+                $this->limite(1);
+            }
             $query = self::getInstance()->prepare(
                 $this->statement . $this->gruop . $this->order . $this->limite . $this->offset
             );
