@@ -26,11 +26,11 @@ class DataLayer extends Connect
     /**
      * @var array|null
      */
-    protected ?array $required;
+    protected ?array $required = array();
     /**
      * @var array|null
      */
-    protected ?array $unique;
+    protected ?array $unique = array();
     /**
      * @var bool
      */
@@ -42,15 +42,15 @@ class DataLayer extends Connect
     /**
      * @var object|null
      */
-    protected ?object $data;
+    protected ?object $data = null;
     /**
      * @var string|null
      */
-    protected ?string $error;
+    protected ?string $error = null;
     /**
      * @var string|null
      */
-    protected ?string $exception;
+    protected ?string $exception = null;
     /**
      * @var string|null
      */
