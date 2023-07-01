@@ -18,59 +18,59 @@ class DataLayer extends Connect
     /**
      * @var string|null
      */
-    protected ?string $entity;
+    private ?string $entity;
     /**
      * @var string|null
      */
-    protected ?string $primary;
+    private ?string $primary;
     /**
      * @var array|null
      */
-    protected ?array $required = array();
+    private ?array $required = array();
     /**
      * @var array|null
      */
-    protected ?array $unique = array();
+    private ?array $unique = array();
     /**
      * @var bool
      */
-    protected bool $timestamp;
+    private bool $timestamp;
     /**
      * @var string|null
      */
-    protected ?string $statement = null;
+    private ?string $statement = null;
     /**
      * @var object|null
      */
-    protected ?object $data = null;
+    private ?object $data = null;
     /**
      * @var string|null
      */
-    protected ?string $error = null;
+    private ?string $error = null;
     /**
      * @var string|null
      */
-    protected ?string $exception = null;
+    private ?string $exception = null;
     /**
      * @var string|null
      */
-    protected ?string $limite = null;
+    private ?string $limite = null;
     /**
      * @var string|null
      */
-    protected ?string $order = null;
+    private ?string $order = null;
     /**
      * @var string|null
      */
-    protected ?string $group = null;
+    private ?string $group = null;
     /**
      * @var string|null
      */
-    protected ?string $offset = null;
+    private ?string $offset = null;
     /**
      * @var array|null
      */
-    protected ?array $parameters = [];
+    private ?array $parameters = [];
 
     /**
      * @param $entity
