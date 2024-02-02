@@ -2,9 +2,9 @@
 
 namespace SmartPRO\Technology;
 
-use stdClass;
 use PDO;
 use PDOException;
+use stdClass;
 
 /**
  * Class DataLayer
@@ -74,12 +74,12 @@ class DataLayer extends Connect
 
     /**
      * @param $entity
-     * @param $primary
+     * @param string $primary
      * @param array $required
      * @param array $unique
      * @param bool $timestamp
      */
-    public function __construct($entity, $primary, array $required = [], array $unique = [], bool $timestamp = true)
+    public function __construct($entity, string $primary = "id", array $required = [], array $unique = [], bool $timestamp = true)
     {
         $this->entity = $entity;
         $this->primary = $primary;
@@ -174,9 +174,9 @@ class DataLayer extends Connect
         try {
             $this->statement = "SELECT {$columns} FROM `{$this->entity}` WHERE {$terms}";
             $query = self::getInstance()->prepare($this->statement . $this->group . $this->order . $this->limite . $this->offset);
-            if($parameters){
+            if ($parameters) {
                 parse_str($parameters, $parametersArray);
-            }else{
+            } else {
                 $parametersArray = array();
             }
             foreach ($parametersArray as $item => $value) {
@@ -248,17 +248,17 @@ class DataLayer extends Connect
     {
         try {
             $this->statement = "select `{$this->primary}` from `{$this->entity}`";
-            if($terms){
-                $this->statement.=" where {$terms}";
+            if ($terms) {
+                $this->statement .= " where {$terms}";
             }
 
             $query = self::getInstance()->prepare($this->statement);
-            if($parameters){
+            if ($parameters) {
                 parse_str($parameters, $parametersArray);
-                foreach ($parametersArray as $item => $value){
-                    if(strpos($this->statement, "like")){
+                foreach ($parametersArray as $item => $value) {
+                    if (strpos($this->statement, "like")) {
                         $query->bindValue($item, "%{$value}%");
-                    }else{
+                    } else {
                         $query->bindValue($item, $value);
                     }
                 }
@@ -266,7 +266,7 @@ class DataLayer extends Connect
 
             $query->execute();
             return $query->rowCount();
-        }catch (PDOException $exception){
+        } catch (PDOException $exception) {
             return null;
         }
     }
