@@ -195,11 +195,12 @@ class DataLayer extends Connect
 
     /**
      * @param $id
+     * @param string $columns
      * @return array|false|mixed|object|DataLayer|stdClass|null
      */
-    public function findById($id)
+    public function findById($id, string $columns = "*")
     {
-        return $this->find("id={$id}")->fetch();
+        return $this->find("id = :id", ":id={$id}", $columns)->fetch();
     }
 
     /**
