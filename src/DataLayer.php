@@ -193,6 +193,18 @@ class DataLayer extends Connect
         }
     }
 
+    public function match($column, $value, $columns = "*")
+    {
+        try {
+            $this->statement = "select {$columns} from `{$this->entity}` where MATCH(`{$column}`) AGAINST(?)";
+            $query = self::getInstance()->prepare($this->statement . $this->group . $this->order . $this->limite . $this->offset);
+            $query->execute([$value]);
+            return $query->fetchAll(PDO::FETCH_CLASS, static::class);
+        } catch (PDOException $exception) {
+            return null;
+        }
+    }
+
     /**
      * @param $id
      * @param string $columns
